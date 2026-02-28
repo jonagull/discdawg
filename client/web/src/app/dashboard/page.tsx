@@ -1,18 +1,9 @@
 'use client'
 
-import { useAuthCheck, useAuthStore } from '@shared'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import ContentWrapper from '@/components/layout/ContentWrapper'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Gauge,
-  Route,
-  Calendar,
-  TrendingUp,
-  Move,
-  Activity,
-} from 'lucide-react'
+import { useReleaseQuality } from './data/hooks'
+import { Gauge, Route, Calendar, TrendingUp, Move, Activity, Target } from 'lucide-react'
 
 // Mock stats – replace with API when ready
 const MOCK_STATS = {
@@ -46,56 +37,30 @@ const MOCK_STATS = {
 const maxThrowsInWeek = Math.max(...MOCK_STATS.lastSevenDays.map(d => d.throws), 1)
 
 export default function DashboardPage() {
-  const { isAuthenticated, isLoading } = useAuthStore()
-  const router = useRouter()
-  useAuthCheck()
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login')
-    }
-  }, [isAuthenticated, isLoading, router])
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-muted/20">
       <ContentWrapper size="xl" className="py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Your stats</h1>
-          <p className="mt-1 text-muted-foreground">
-            Flight data from your DiscDawg. All time and recent activity.
-          </p>
+          <p className="mt-1 text-muted-foreground">Flight data from your DiscDawg. All time and recent activity.</p>
         </div>
 
         {/* Top-level stat cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="border-0 bg-background shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total throws
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total throws</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tabular-nums">
-                {MOCK_STATS.totalThrows.toLocaleString()}
-              </div>
+              <div className="text-3xl font-bold tabular-nums">{MOCK_STATS.totalThrows.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground mt-1">All time</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 bg-background shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Top speed
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Top speed</CardTitle>
               <Gauge className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -106,9 +71,7 @@ export default function DashboardPage() {
 
           <Card className="border-0 bg-background shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Max distance
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Max distance</CardTitle>
               <Route className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -119,9 +82,7 @@ export default function DashboardPage() {
 
           <Card className="border-0 bg-background shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Sessions
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Sessions</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -144,16 +105,12 @@ export default function DashboardPage() {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-baseline">
                 <span className="text-muted-foreground">Avg speed</span>
-                <span className="text-xl font-semibold tabular-nums">
-                  {MOCK_STATS.averageSpeedMph} mph
-                </span>
+                <span className="text-xl font-semibold tabular-nums">{MOCK_STATS.averageSpeedMph} mph</span>
               </div>
               <div className="h-px bg-border" />
               <div className="flex justify-between items-baseline">
                 <span className="text-muted-foreground">Sessions this week</span>
-                <span className="text-xl font-semibold tabular-nums">
-                  {MOCK_STATS.sessionsThisWeek}
-                </span>
+                <span className="text-xl font-semibold tabular-nums">{MOCK_STATS.sessionsThisWeek}</span>
               </div>
             </CardContent>
           </Card>
@@ -174,10 +131,7 @@ export default function DashboardPage() {
                     <span className="font-medium tabular-nums">{MOCK_STATS.hyzerPercent}%</span>
                   </div>
                   <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${MOCK_STATS.hyzerPercent}%` }}
-                    />
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${MOCK_STATS.hyzerPercent}%` }} />
                   </div>
                 </div>
                 <div>
@@ -208,6 +162,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Release quality – from hooks (mock now; replace with API in data/hooks.ts) */}
+        <ReleaseQualityCard className="mb-8" />
 
         {/* This week activity bars */}
         <Card className="border-0 bg-background shadow-sm mb-8">
@@ -266,5 +223,31 @@ export default function DashboardPage() {
         </Card>
       </ContentWrapper>
     </div>
+  )
+}
+
+function ReleaseQualityCard({ className }: { className?: string }) {
+  const q = useReleaseQuality()
+  return (
+    <Card className={`border-0 bg-background shadow-sm ${className ?? ''}`}>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Target className="h-4 w-4" />
+          Release quality
+        </CardTitle>
+        <CardDescription>
+          Consistency of release angle (mock). Derive from first frames of each throw when API is ready.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold tabular-nums">{q.consistencyPercent}%</span>
+          <span className="text-muted-foreground">consistent release</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Hyzer {q.hyzerPercent}% · Anhyzer {q.anhyzerPercent}% · Flat {q.flatPercent}%
+        </p>
+      </CardContent>
+    </Card>
   )
 }

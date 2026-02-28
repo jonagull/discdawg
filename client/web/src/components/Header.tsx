@@ -37,16 +37,10 @@ export function Header() {
               )}
             </Link>
             <nav className="hidden md:flex items-center space-x-4">
-              <Link
-                href="/#how-it-works"
-                className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
-              >
+              <Link href="/#how-it-works" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
                 How it works
               </Link>
-              <Link
-                href="/#waitlist"
-                className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
-              >
+              <Link href="/#waitlist" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
                 Get notified
               </Link>
             </nav>
@@ -56,10 +50,7 @@ export function Header() {
               <span className="text-sm text-gray-500">Loading...</span>
             ) : isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
-                >
+                <Link href="/dashboard" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
                   Dashboard
                 </Link>
                 <span className="text-sm text-gray-700">{user.email}</span>
