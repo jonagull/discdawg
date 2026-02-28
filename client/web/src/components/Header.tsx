@@ -2,11 +2,14 @@
 
 import { useLogout, useUser, useAuthStore } from '@shared'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useState } from 'react'
 
 export function Header() {
   const { user, isAuthenticated, isLoading } = useAuthStore()
   const { mutate: logout, isPending: isLoggingOut } = useLogout()
   const { isLoading: isLoadingUser } = useUser()
+  const [logoError, setLogoError] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -17,10 +20,21 @@ export function Header() {
   return (
     <header className="w-full border-b border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           <div className="flex items-center space-x-6">
-            <Link href="/" className="text-xl font-semibold hover:opacity-80">
-              DiscDawg
+            <Link href="/" className="flex items-center hover:opacity-80">
+              {!logoError ? (
+                <Image
+                  src="/assets/logo.png"
+                  alt="DiscDawg"
+                  width={180}
+                  height={52}
+                  className="h-12 w-auto"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="text-xl font-semibold">DiscDawg</span>
+              )}
             </Link>
             <nav className="hidden md:flex items-center space-x-4">
               <Link

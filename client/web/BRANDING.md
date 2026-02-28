@@ -45,7 +45,8 @@ DiscDawg is a small puck that attaches to your disc. It tracks flight data—spe
 
 - **Spelling:** Always **DiscDawg** (one word).
 - **Primary CTA:** e.g. "Get notified" / "Join waitlist" / "Learn more" (decide per channel).
-- **Hero image:** Puck on disc, or app showing flight stats (placeholder until final assets).
+- **Hero image:** Puck on disc, or app showing flight stats (placeholder until final photography).
+- **Logo & assets:** Put the logo in `client/web/public/assets/` as **logo.svg** (or logo.png). It’s used in the header and on the landing hero. See `public/assets/README.md` for details.
 
 ---
 
