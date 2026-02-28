@@ -35,7 +35,10 @@ export default function LiveMonitorScreen({ onBack }: Props) {
         if (!deviceRef.current) return;
         try {
           const value = await readRealtimeSample(deviceRef.current);
-          if (value) setSample(value);
+          if (value) {
+            setSample(value);
+            setStage('Streaming');
+          }
         } catch {
           setStage('Read Error');
         }

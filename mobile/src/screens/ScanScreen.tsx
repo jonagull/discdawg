@@ -7,6 +7,7 @@ import {
   connectToDisc,
   disconnectFromDisc,
   downloadFlightFromDisc,
+  generateMockFlightOnDisc,
   scanForDisc,
 } from '../services/bleLive';
 
@@ -98,6 +99,55 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
     }
   };
 
+  const runLiveMockDownload = async () => {
+    setScanning(true);
+    setLiveStage('Scanning');
+    setProgressText('');
+
+    let device: any = null;
+
+    try {
+      device = await scanForDisc(12000);
+      setLiveStage('Disc Found');
+
+      device = await connectToDisc(device.id);
+      setLiveStage('Connected');
+
+      setLiveStage('Generating Mock');
+      await generateMockFlightOnDisc(device);
+
+      setLiveStage('Downloading');
+      const samples = await downloadFlightFromDisc(device, (received, total) => {
+        setProgressText(total ? `${received}/${total} chunks` : `${received} chunks`);
+      });
+
+      const duration = samples[samples.length - 1].t - samples[0].t;
+      const flight: Flight = {
+        id: Date.now().toString(),
+        discName: device.name || device.localName || 'DiscDawg',
+        recordedAt: new Date().toISOString(),
+        duration,
+        samples,
+        synced: false,
+      };
+
+      await saveFlight(flight);
+      await clearDiscFlight(device);
+
+      setLiveStage('Saved');
+      Alert.alert('Pico Mock Download Complete', `Generated on Pico and saved ${samples.length} samples.`);
+      onFlightSaved();
+    } catch (error: any) {
+      setLiveStage('Error');
+      Alert.alert('Live Mock Failed', error?.message || 'Failed to generate or download mock flight.');
+    } finally {
+      if (device) {
+        await disconnectFromDisc(device);
+      }
+      setScanning(false);
+    }
+  };
+
   const handleScan = () => {
     if (dataMode === 'mock') {
       simulateScan();
@@ -149,6 +199,11 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
             <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
               <Text style={styles.scanButtonText}>{dataMode === 'mock' ? 'Generate Mock Flight' : 'Scan Disc'}</Text>
             </TouchableOpacity>
+            {dataMode === 'live' ? (
+              <TouchableOpacity style={styles.mockOnPicoButton} onPress={runLiveMockDownload}>
+                <Text style={styles.mockOnPicoButtonText}>Generate Mock On Pico + Download</Text>
+              </TouchableOpacity>
+            ) : null}
           </>
         )}
       </View>
@@ -241,5 +296,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4b5563',
     marginBottom: 10,
+  },
+  mockOnPicoButton: {
+    marginTop: 10,
+    backgroundColor: '#0f766e',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  mockOnPicoButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
