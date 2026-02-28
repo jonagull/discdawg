@@ -16,7 +16,7 @@ export const useRegister = () => {
 
       setAuthenticated(true)
       queryClient.invalidateQueries({ queryKey: ['user'] })
-      router.push('/')
+      router.push('/dashboard')
     },
     onError: error => console.error('Registration failed:', error),
   })
@@ -34,7 +34,7 @@ export const useLogin = () => {
 
       setAuthenticated(true)
       queryClient.invalidateQueries({ queryKey: ['user'] })
-      router.push('/')
+      router.push('/dashboard')
     },
     onError: error => console.error('Login failed:', error),
   })

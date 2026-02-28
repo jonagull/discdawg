@@ -4,8 +4,9 @@ import { Providers } from './providers'
 import { Header } from '@/components/Header'
 
 export const metadata: Metadata = {
-  title: 'App',
-  description: 'App',
+  title: 'DiscDawg – Flight data for your disc',
+  description:
+    'A puck that attaches to your disc. Track speed, hyzer, anhyzer, and distance. Sync to your phone and improve your game.',
 }
 
 export default function RootLayout({

@@ -2,7 +2,6 @@
 
 import { useLogout, useUser, useAuthStore } from '@shared'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 
 export function Header() {
   const { user, isAuthenticated, isLoading } = useAuthStore()
@@ -21,26 +20,20 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-6">
             <Link href="/" className="text-xl font-semibold hover:opacity-80">
-              App
+              DiscDawg
             </Link>
             <nav className="hidden md:flex items-center space-x-4">
               <Link
-                href="/docs"
-                className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                href="/#how-it-works"
+                className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
               >
-                Docs
-                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                  Dev
-                </Badge>
+                How it works
               </Link>
               <Link
-                href="/structure"
-                className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                href="/#waitlist"
+                className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
               >
-                Structure
-                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                  Dev
-                </Badge>
+                Get notified
               </Link>
             </nav>
           </div>
@@ -49,6 +42,12 @@ export function Header() {
               <span className="text-sm text-gray-500">Loading...</span>
             ) : isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
+                <Link
+                  href="/dashboard"
+                  className="text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Dashboard
+                </Link>
                 <span className="text-sm text-gray-700">{user.email}</span>
                 <button
                   onClick={handleLogout}
@@ -61,7 +60,7 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800"
               >
                 <div className="flex items-center space-x-2">Login</div>
               </Link>
