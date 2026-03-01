@@ -36,12 +36,38 @@ function encodeUtf8(value: string) {
 export async function scanForDisc(timeoutMs = 20000) {
     const { manager } = await getBleManager();
 
+    const timeoutSec = Math.round(timeoutMs / 1000);
+    try {
+        const state = await manager.state();
+        console.log("[BLE scan] Adapter state:", state);
+        if (state === "Unknown") {
+            console.log(
+                "[BLE scan] Bluetooth is 'Unknown' – grant the app Bluetooth permission in Settings (Settings > DiscDawg > Bluetooth), then restart the app. On first launch, allow when prompted.",
+            );
+        }
+        if (state !== "PoweredOn") {
+            console.log("[BLE scan] Bluetooth is not PoweredOn. Turn on Bluetooth in system Settings and try again.");
+        }
+    } catch (e) {
+        console.log("[BLE scan] Could not get adapter state:", (e as Error)?.message);
+    }
+    console.log("[BLE scan] Starting scan for DiscDawg (timeout " + timeoutSec + "s)...");
+
     return new Promise<any>((resolve, reject) => {
         let settled = false;
+        const devicesSeen = new Map<string, string>(); // id -> name for timeout log
+
         const timeoutId = setTimeout(() => {
             if (settled) return;
             settled = true;
             manager.stopDeviceScan();
+            const names = Array.from(devicesSeen.entries())
+                .map(([id, name]) => name || id)
+                .slice(0, 20);
+            console.log(
+                "[BLE scan] Timeout after " + timeoutSec + "s. No device named 'DiscDawg' found. Devices seen (" + devicesSeen.size + "):",
+                names.length ? names.join(", ") : "(none)",
+            );
             reject(
                 new Error(
                     "Timed out scanning for DiscDawg. Make sure Pico is powered and advertising.",
@@ -60,28 +86,21 @@ export async function scanForDisc(timeoutMs = 20000) {
                     settled = true;
                     clearTimeout(timeoutId);
                     manager.stopDeviceScan();
+                    console.log("[BLE scan] Error:", error?.message ?? error);
                     reject(error);
                     return;
                 }
 
-                const name = device?.name || device?.localName || "";
+                const name = device?.name ?? device?.localName ?? "";
                 if (device) {
-                    // Debug trace to help field troubleshooting.
-                    console.log(
-                        "[BLE scan] device:",
-                        device.id,
-                        name || "(no-name)",
-                    );
+                    devicesSeen.set(device.id, name || "(no-name)");
+                    console.log("[BLE scan] device:", device.id, name || "(no-name)");
                 }
                 if (device && name.includes("DiscDawg")) {
                     settled = true;
                     clearTimeout(timeoutId);
                     manager.stopDeviceScan();
-                    console.log(
-                        "[BLE scan] matched DiscDawg:",
-                        device.id,
-                        name,
-                    );
+                    console.log("[BLE scan] Matched DiscDawg:", device.id, name);
                     resolve(device);
                 }
             },

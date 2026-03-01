@@ -1,3 +1,4 @@
+# DiscDawg Pico firmware - logs go to serial (USB). Connect a serial terminal to the Pico to see them.
 from machine import Pin, I2C
 import time
 import json
@@ -7,6 +8,9 @@ import struct
 import ubinascii
 import bluetooth
 import bno08x
+
+print("DiscDawg main.py starting...")
+print("(Serial logs: connect a terminal to this Pico at 115200 baud to see output)")
 
 
 # -----------------------------
@@ -291,7 +295,9 @@ accel_report_enabled = (
 
 
 def resolve_accel_reader(sensor):
+    # BNO08x driver exposes acceleration as .acc (see test_bn.py)
     candidates = [
+        "acc",
         "accel",
         "acceleration",
         "linear_acceleration",
@@ -334,6 +340,7 @@ while True:
 ble_server = FlightBLEServer(on_clear=clear_flight_file, on_mock=generate_mock_flight_payload)
 existing_payload = read_flight_bytes()
 ble_server.set_flight_payload(existing_payload)
+print("BLE: advertising as DiscDawg (local name in payload). Scan for 'DiscDawg' from the app.")
 
 
 # -----------------------------
@@ -343,6 +350,7 @@ state = "idle"
 samples = []
 start_time = 0
 last_land_time = None
+last_ble_log_time = 0
 
 led = Pin("LED", Pin.OUT)
 
@@ -381,6 +389,12 @@ while True:
         accel_magnitude,
     )
     ble_server._set_monitor(monitor_line)
+
+    # Periodic BLE heartbeat so serial shows we're alive and advertising
+    now_ms = time.ticks_ms()
+    if time.ticks_diff(now_ms, last_ble_log_time) >= 10000:
+        print("BLE: advertising, connections={}".format(len(ble_server.connections)))
+        last_ble_log_time = now_ms
 
     if state == "idle":
         if accel_reader and accel_magnitude > THROW_THRESHOLD:
