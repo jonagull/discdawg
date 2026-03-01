@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { saveFlight } from '../services/storage';
 import { DataMode, Flight, FlightSample } from '../types';
 import {
@@ -7,9 +16,9 @@ import {
   connectToDisc,
   disconnectFromDisc,
   downloadFlightFromDisc,
-  generateMockFlightOnDisc,
   scanForDisc,
 } from '../services/bleLive';
+import { theme } from '../theme';
 
 interface Props {
   onFlightSaved: () => void;
@@ -24,7 +33,6 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
 
   const simulateScan = () => {
     setScanning(true);
-    
     setTimeout(() => {
       const samples: FlightSample[] = [];
       for (let i = 0; i < 200; i++) {
@@ -35,7 +43,6 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
           y: i * 0.5 + (Math.random() - 0.5) * 2,
         });
       }
-
       const flight: Flight = {
         id: Date.now().toString(),
         discName: 'Disc-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
@@ -44,11 +51,9 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
         samples,
         synced: false,
       };
-
       saveFlight(flight);
       setScanning(false);
-      const source = dataMode === 'mock' ? 'mock profile' : 'live fallback profile';
-      Alert.alert('Success', `Downloaded flight with ${samples.length} samples from ${source}.`);
+      Alert.alert('Saved', `Flight with ${samples.length} samples added.`);
       onFlightSaved();
     }, 2000);
   };
@@ -57,21 +62,15 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
     setScanning(true);
     setLiveStage('Scanning');
     setProgressText('');
-
     let device: any = null;
-
     try {
       device = await scanForDisc(12000);
-      setLiveStage('Disc Found');
-
+      setLiveStage('Connecting');
       device = await connectToDisc(device.id);
-      setLiveStage('Connected');
-
       setLiveStage('Downloading');
       const samples = await downloadFlightFromDisc(device, (received, total) => {
         setProgressText(total ? `${received}/${total} chunks` : `${received} chunks`);
       });
-
       const duration = samples[samples.length - 1].t - samples[0].t;
       const flight: Flight = {
         id: Date.now().toString(),
@@ -81,69 +80,16 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
         samples,
         synced: false,
       };
-
       await saveFlight(flight);
       await clearDiscFlight(device);
-
       setLiveStage('Saved');
-      Alert.alert('Live Download Complete', `Connected to disc and saved ${samples.length} samples.`);
+      Alert.alert('Saved', `${samples.length} samples downloaded from your disc.`);
       onFlightSaved();
     } catch (error: any) {
       setLiveStage('Error');
-      Alert.alert('Live Scan Failed', error?.message || 'Failed to connect or download from disc.');
+      Alert.alert('Couldn’t connect', error?.message || 'Make sure the Pico is on and nearby, then try again.');
     } finally {
-      if (device) {
-        await disconnectFromDisc(device);
-      }
-      setScanning(false);
-    }
-  };
-
-  const runLiveMockDownload = async () => {
-    setScanning(true);
-    setLiveStage('Scanning');
-    setProgressText('');
-
-    let device: any = null;
-
-    try {
-      device = await scanForDisc(12000);
-      setLiveStage('Disc Found');
-
-      device = await connectToDisc(device.id);
-      setLiveStage('Connected');
-
-      setLiveStage('Generating Mock');
-      await generateMockFlightOnDisc(device);
-
-      setLiveStage('Downloading');
-      const samples = await downloadFlightFromDisc(device, (received, total) => {
-        setProgressText(total ? `${received}/${total} chunks` : `${received} chunks`);
-      });
-
-      const duration = samples[samples.length - 1].t - samples[0].t;
-      const flight: Flight = {
-        id: Date.now().toString(),
-        discName: device.name || device.localName || 'DiscDawg',
-        recordedAt: new Date().toISOString(),
-        duration,
-        samples,
-        synced: false,
-      };
-
-      await saveFlight(flight);
-      await clearDiscFlight(device);
-
-      setLiveStage('Saved');
-      Alert.alert('Pico Mock Download Complete', `Generated on Pico and saved ${samples.length} samples.`);
-      onFlightSaved();
-    } catch (error: any) {
-      setLiveStage('Error');
-      Alert.alert('Live Mock Failed', error?.message || 'Failed to generate or download mock flight.');
-    } finally {
-      if (device) {
-        await disconnectFromDisc(device);
-      }
+      if (device) await disconnectFromDisc(device);
       setScanning(false);
     }
   };
@@ -153,57 +99,49 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
       simulateScan();
       return;
     }
-
     runLiveScan();
   };
 
-  const liveConnected = dataMode === 'live' && ['Connected', 'Downloading', 'Saved'].includes(liveStage);
-
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backHit}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <View style={styles.backHit} />
+      </View>
 
       <View style={styles.content}>
         {scanning ? (
           <>
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.status}>{dataMode === 'live' ? `Live: ${liveStage}` : 'Scanning for DiscDawg...'}</Text>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={styles.status}>
+              {dataMode === 'live' ? liveStage : 'Generating…'}
+            </Text>
             <Text style={styles.hint}>
               {dataMode === 'live'
-                ? 'Looking for DiscDawg over BLE. Keep Pico powered and near the phone.'
-                : 'Make sure your disc is powered on and nearby'}
+                ? 'Looking for DiscDawg. Keep your disc powered and close.'
+                : 'Adding a sample flight to your list.'}
             </Text>
             {progressText ? <Text style={styles.progressText}>{progressText}</Text> : null}
           </>
         ) : (
           <>
-            <Text style={styles.status}>Ready to Scan</Text>
-            <View style={[styles.modeChip, dataMode === 'mock' ? styles.modeMock : styles.modeLive]}>
-              <Text style={styles.modeChipText}>Mode: {dataMode.toUpperCase()}</Text>
-            </View>
-            {dataMode === 'live' ? (
-              <View style={[styles.connectionBanner, liveConnected ? styles.connectionGood : styles.connectionIdle]}>
-                <Text style={styles.connectionText}>
-                  {liveConnected ? 'LIVE CONNECTED TO DISC' : `LIVE STATUS: ${liveStage.toUpperCase()}`}
-                </Text>
-              </View>
-            ) : null}
+            <Text style={styles.title}>
+              {dataMode === 'live' ? 'Download from disc' : 'Generate sample flight'}
+            </Text>
             <Text style={styles.hint}>
-              {dataMode === 'mock'
-                ? 'Mock mode is active. Tap below to generate realistic disc-golf throw data.'
-                : 'Live mode scans for DiscDawg over BLE and downloads real flight data from Pico.'}
+              {dataMode === 'live'
+                ? 'Scan for your DiscDawg over Bluetooth and download the latest flight.'
+                : 'Add a sample flight (dev mode). Use Developer settings to switch to live.'}
             </Text>
             {progressText ? <Text style={styles.progressText}>{progressText}</Text> : null}
-            <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
-              <Text style={styles.scanButtonText}>{dataMode === 'mock' ? 'Generate Mock Flight' : 'Scan Disc'}</Text>
+            <TouchableOpacity style={styles.scanButton} onPress={handleScan} activeOpacity={0.8}>
+              <Text style={styles.scanButtonText}>
+                {dataMode === 'live' ? 'Scan for disc' : 'Generate sample'}
+              </Text>
             </TouchableOpacity>
-            {dataMode === 'live' ? (
-              <TouchableOpacity style={styles.mockOnPicoButton} onPress={runLiveMockDownload}>
-                <Text style={styles.mockOnPicoButtonText}>Generate Mock On Pico + Download</Text>
-              </TouchableOpacity>
-            ) : null}
           </>
         )}
       </View>
@@ -214,99 +152,74 @@ export default function ScanScreen({ onFlightSaved, onBack, dataMode }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: theme.background,
   },
-  backButton: {
-    padding: 8,
-    marginBottom: 24,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  backHit: {
+    minWidth: 60,
   },
   backText: {
     fontSize: 16,
-    color: '#2563eb',
+    color: theme.primary,
+    fontWeight: '500',
+  },
+  logo: {
+    height: 28,
+    width: 100,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: theme.text,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   status: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginTop: 24,
+    color: theme.text,
+    marginTop: 20,
     marginBottom: 8,
   },
   hint: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
+    color: theme.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     lineHeight: 22,
   },
-  modeChip: {
-    marginTop: 8,
-    marginBottom: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  modeMock: {
-    backgroundColor: '#111827',
-  },
-  modeLive: {
-    backgroundColor: '#059669',
-  },
-  modeChipText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 0.4,
+  progressText: {
+    fontSize: 14,
+    color: theme.textMuted,
+    marginTop: 12,
   },
   scanButton: {
     marginTop: 32,
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 24,
+    backgroundColor: theme.primary,
+    paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
+    minWidth: 200,
+    alignItems: 'center',
   },
   scanButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  connectionBanner: {
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  connectionGood: {
-    backgroundColor: '#065f46',
-  },
-  connectionIdle: {
-    backgroundColor: '#1f2937',
-  },
-  connectionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  progressText: {
-    fontSize: 13,
-    color: '#4b5563',
-    marginBottom: 10,
-  },
-  mockOnPicoButton: {
-    marginTop: 10,
-    backgroundColor: '#0f766e',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  mockOnPicoButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

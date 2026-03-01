@@ -3,6 +3,7 @@ import { SafeAreaView, View, Text, ScrollView, TouchableOpacity, StyleSheet } fr
 import { Flight } from '../types';
 import { getFlight, deleteFlight } from '../services/storage';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { theme } from '../theme';
 
 type RootStackParamList = {
   FlightDetail: { flightId: string };
@@ -33,8 +34,8 @@ export default function FlightDetailScreen() {
 
   if (!flight) {
     return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.loadingText}>Loading…</Text>
       </View>
     );
   }
@@ -199,7 +200,7 @@ export default function FlightDetailScreen() {
         <Text style={styles.rangeText}>Range: {stats.rollRange[0].toFixed(1)}° to {stats.rollRange[1].toFixed(1)}°</Text>
         <View style={styles.dataContainer}>
           {displaySamples.map((s, i) => (
-            <View key={i} style={[styles.bar, { height: Math.abs(s.r) * 2, backgroundColor: '#2563eb' }]} />
+            <View key={i} style={[styles.bar, { height: Math.abs(s.r) * 2, backgroundColor: theme.primary }]} />
           ))}
         </View>
       </View>
@@ -209,7 +210,7 @@ export default function FlightDetailScreen() {
         <Text style={styles.rangeText}>Range: {stats.pitchRange[0].toFixed(1)}° to {stats.pitchRange[1].toFixed(1)}°</Text>
         <View style={styles.dataContainer}>
           {displaySamples.map((s, i) => (
-            <View key={i} style={[styles.bar, { height: Math.abs(s.p) * 2, backgroundColor: '#10b981' }]} />
+            <View key={i} style={[styles.bar, { height: Math.abs(s.p) * 2, backgroundColor: theme.primaryLight }]} />
           ))}
         </View>
       </View>
@@ -219,7 +220,7 @@ export default function FlightDetailScreen() {
         <Text style={styles.rangeText}>Range: {stats.yawRange[0].toFixed(1)}° to {stats.yawRange[1].toFixed(1)}°</Text>
         <View style={styles.dataContainer}>
           {displaySamples.map((s, i) => (
-            <View key={i} style={[styles.bar, { height: Math.min(Math.abs(s.y) * 2, 100), backgroundColor: '#f59e0b' }]} />
+            <View key={i} style={[styles.bar, { height: Math.min(Math.abs(s.y) * 2, 100), backgroundColor: theme.primaryDark }]} />
           ))}
         </View>
       </View>
@@ -233,32 +234,44 @@ export default function FlightDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.background,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: theme.textSecondary,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 28,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   backText: {
     fontSize: 16,
-    color: '#2563eb',
+    color: theme.primary,
+    fontWeight: '500',
   },
   deleteText: {
     fontSize: 16,
     color: '#dc2626',
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: theme.text,
   },
   date: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     marginBottom: 16,
   },
   statsGrid: {
@@ -268,19 +281,21 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    padding: 18,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.textSecondary,
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2563eb',
+    fontWeight: '700',
+    color: theme.primary,
     marginTop: 4,
   },
   section: {
@@ -289,27 +304,28 @@ const styles = StyleSheet.create({
   metricRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border,
   },
   metricKey: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.text,
   },
   metricValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: theme.text,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 8,
+    color: theme.text,
   },
   rangeText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.textSecondary,
     marginBottom: 8,
   },
   dataContainer: {

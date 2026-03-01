@@ -8,6 +8,7 @@ import FlightListScreen from './src/screens/FlightListScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import FlightDetailScreen from './src/screens/FlightDetailScreen';
 import LiveMonitorScreen from './src/screens/LiveMonitorScreen';
+import DevScreen from './src/screens/DevScreen';
 import { DataMode } from './src/types';
 
 type RootStackParamList = {
@@ -15,6 +16,7 @@ type RootStackParamList = {
   Scan: undefined;
   LiveMonitor: undefined;
   FlightDetail: { flightId: string };
+  Dev: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -53,8 +55,7 @@ export default function App() {
               onFlightSelect={(flight) => navigation.navigate('FlightDetail', { flightId: flight.id })}
               onScan={() => navigation.navigate('Scan')}
               onMonitor={() => navigation.navigate('LiveMonitor')}
-              dataMode={dataMode}
-              onToggleDataMode={handleToggleDataMode}
+              onOpenDev={() => navigation.navigate('Dev')}
             />
           )}
         </Stack.Screen>
@@ -71,6 +72,16 @@ export default function App() {
           {({ navigation }) => <LiveMonitorScreen onBack={() => navigation.goBack()} />}
         </Stack.Screen>
         <Stack.Screen name="FlightDetail" options={{ headerShown: false }} component={FlightDetailScreen} />
+        <Stack.Screen name="Dev" options={{ headerShown: false }}>
+          {({ navigation }) => (
+            <DevScreen
+              onBack={() => navigation.goBack()}
+              dataMode={dataMode}
+              onToggleDataMode={handleToggleDataMode}
+              onFlightSaved={() => navigation.navigate('FlightList')}
+            />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,18 +1,27 @@
 import React, { useState, useCallback } from 'react';
-import { SafeAreaView, View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  Image,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { DataMode, Flight, FlightSample } from '../types';
-import { getAllFlights, initDatabase, saveFlight } from '../services/storage';
+import { Flight } from '../types';
+import { getAllFlights, initDatabase } from '../services/storage';
+import { theme, TAGLINE } from '../theme';
 
 interface Props {
   onFlightSelect: (flight: Flight) => void;
   onScan: () => void;
   onMonitor: () => void;
-  dataMode: DataMode;
-  onToggleDataMode: () => void;
+  onOpenDev: () => void;
 }
 
-export default function FlightListScreen({ onFlightSelect, onScan, onMonitor, dataMode, onToggleDataMode }: Props) {
+export default function FlightListScreen({ onFlightSelect, onScan, onMonitor, onOpenDev }: Props) {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -44,33 +53,15 @@ export default function FlightListScreen({ onFlightSelect, onScan, onMonitor, da
     return ms.toFixed(1) + 's';
   };
 
-  const addDemoFlight = async () => {
-    const samples: FlightSample[] = [];
-    for (let i = 0; i < 200; i++) {
-      samples.push({
-        t: i * 20,
-        r: Math.sin(i * 0.1) * 30,
-        p: Math.cos(i * 0.05) * 20,
-        y: i * 0.5,
-      });
-    }
-    const demoFlight: Flight = {
-      id: Date.now().toString(),
-      discName: 'Demo Disc',
-      recordedAt: new Date().toISOString(),
-      duration: samples[samples.length - 1].t - samples[0].t,
-      samples,
-      synced: false,
-    };
-    await saveFlight(demoFlight);
-    loadFlights();
-  };
-
   const renderItem = ({ item }: { item: Flight }) => (
-    <TouchableOpacity style={styles.card} onPress={() => onFlightSelect(item)}>
+    <TouchableOpacity style={styles.card} onPress={() => onFlightSelect(item)} activeOpacity={0.7}>
       <View style={styles.cardHeader}>
         <Text style={styles.discName}>{item.discName}</Text>
-        {!item.synced && <View style={styles.unsyncedBadge}><Text style={styles.unsyncedText}>Local</Text></View>}
+        {!item.synced && (
+          <View style={styles.unsyncedBadge}>
+            <Text style={styles.unsyncedText}>Local</Text>
+          </View>
+        )}
       </View>
       <Text style={styles.date}>{formatDate(item.recordedAt)}</Text>
       <View style={styles.stats}>
@@ -83,38 +74,35 @@ export default function FlightListScreen({ onFlightSelect, onScan, onMonitor, da
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Flights</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[styles.modeButton, dataMode === 'mock' ? styles.modeMock : styles.modeLive]}
-            onPress={onToggleDataMode}
-          >
-            <Text style={styles.modeButtonText}>{dataMode === 'mock' ? 'MOCK' : 'LIVE'}</Text>
+        <View style={styles.headerTop}>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+          <TouchableOpacity style={styles.devLink} onPress={onOpenDev} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={styles.devLinkText}>Dev</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.scanButton} onPress={onScan}>
-            <Text style={styles.scanButtonText}>+ Scan</Text>
+        </View>
+        <Text style={styles.tagline}>{TAGLINE}</Text>
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.primaryButton} onPress={onScan} activeOpacity={0.8}>
+            <Text style={styles.primaryButtonText}>Download from disc</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.monitorButton} onPress={onMonitor}>
-            <Text style={styles.monitorButtonText}>Live</Text>
+          <TouchableOpacity style={styles.secondaryButton} onPress={onMonitor} activeOpacity={0.8}>
+            <Text style={styles.secondaryButtonText}>Live monitor</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {flights.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>No flights yet</Text>
-          <Text style={styles.emptySubtext}>Scan your disc to download flight data</Text>
-          <TouchableOpacity style={styles.demoButton} onPress={addDemoFlight}>
-            <Text style={styles.demoButtonText}>Add Demo Flight</Text>
-          </TouchableOpacity>
+          <Text style={styles.emptyTitle}>No flights yet</Text>
+          <Text style={styles.emptySubtext}>Tap “Download from disc” to scan your DiscDawg and save a flight.</Text>
         </View>
       ) : (
         <FlatList
           data={flights}
           renderItem={renderItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.primary]} />}
         />
       )}
     </SafeAreaView>
@@ -124,62 +112,69 @@ export default function FlightListScreen({ onFlightSelect, onScan, onMonitor, da
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.background,
   },
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    marginBottom: 4,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  logo: {
+    height: 36,
+    width: 120,
   },
-  scanButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  devLink: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  modeMock: {
-    backgroundColor: '#111827',
-  },
-  modeLive: {
-    backgroundColor: '#059669',
-  },
-  modeButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 0.4,
-  },
-  scanButtonText: {
-    color: '#fff',
+  devLinkText: {
+    fontSize: 13,
+    color: theme.textMuted,
     fontWeight: '600',
   },
-  monitorButton: {
-    backgroundColor: '#0f766e',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+  tagline: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    marginBottom: 16,
   },
-  monitorButtonText: {
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: theme.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 0.3,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: theme.surfaceMuted,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  secondaryButtonText: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   list: {
     padding: 16,
@@ -187,13 +182,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    padding: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
     elevation: 2,
   },
   cardHeader: {
@@ -203,32 +198,33 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   discName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
+    color: theme.text,
   },
   unsyncedBadge: {
     backgroundColor: '#fef3c7',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   unsyncedText: {
-    fontSize: 12,
-    color: '#d97706',
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#b45309',
+    fontWeight: '600',
   },
   date: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     marginBottom: 8,
+  },
+  stat: {
+    fontSize: 14,
+    color: theme.textMuted,
   },
   stats: {
     flexDirection: 'row',
     gap: 16,
-  },
-  stat: {
-    fontSize: 14,
-    color: '#374151',
   },
   empty: {
     flex: 1,
@@ -236,27 +232,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.text,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: 'center',
-  },
-  demoButton: {
-    marginTop: 24,
-    backgroundColor: '#10b981',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  demoButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 22,
   },
 });
